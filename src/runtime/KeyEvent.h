@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 
 // Async means that the key can be pressed/released any time afterwards (but
 // does not have to). A normal up/down can follow, to "synchronize" the state.
@@ -49,3 +50,13 @@ public:
   }
 };
 
+enum class ActionType : uint16_t {
+  Sequence,
+  Command
+};
+
+struct Action {
+    ActionType type;
+    std::string command;
+    KeySequence sequence;
+};

@@ -82,7 +82,12 @@ namespace {
     const auto input = get_key_event(wparam, kbd);
 
     auto translated = false;
-    auto output = apply_input(input);
+    auto action = apply_input(input);
+    if (action.type == ActionType::Command) {
+      WinExec(action.command.c_str(), 1);
+    }
+
+    auto output = action.sequence;
     if (output.size() != 1 ||
         output.front().key != input.key ||
         (output.front().state == KeyState::Up) !=

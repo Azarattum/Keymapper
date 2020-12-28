@@ -5,12 +5,12 @@
 
 struct Mapping {
   KeySequence input;
-  KeySequence output;
+  Action output;
 };
 
 struct MappingOverride {
   int mapping_index;
-  KeySequence output;
+  Action output;
 };
 using MappingOverrideSet = std::vector<MappingOverride>;
 
@@ -24,15 +24,15 @@ public:
   const std::vector<MappingOverrideSet>& override_sets() const;
   const KeySequence& sequence() const { return m_sequence; }
   void activate_override_set(int index);
-  KeySequence apply_input(KeyEvent event);
+  Action apply_input(KeyEvent event);
   void reuse_buffer(KeySequence&& buffer);
   void validate_state(const std::function<bool(KeyCode)>& is_down);
 
 private:
   void release_triggered(KeyCode key);
-  const KeySequence& get_output(const Mapping& mapping) const;
+  const Action& get_output(const Mapping& mapping) const;
   void forward_from_sequence();
-  void apply_output(const KeySequence& expression);
+  void apply_output(const Action& expression);
   void update_output(const KeyEvent& event, KeyCode trigger);
   void finish_sequence();
   void toggle_virtual_key(KeyCode key);
@@ -57,5 +57,5 @@ private:
   std::vector<OutputDown> m_output_down;
 
   // temporary buffer
-  KeySequence m_output_buffer;
+  Action m_output_buffer;
 };

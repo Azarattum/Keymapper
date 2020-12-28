@@ -10,13 +10,13 @@ struct Context {
 
 struct ContextMapping {
   int context_index;
-  KeySequence output;
+  Action output;
 };
 
 struct Command {
   std::string name;
   KeySequence input;
-  KeySequence default_mapping;
+  Action default_mapping;
   std::vector<ContextMapping> context_mappings;
 };
 

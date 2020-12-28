@@ -77,7 +77,12 @@ int run_interception() {
 
     auto* keystroke = reinterpret_cast<InterceptionKeyStroke*>(&stroke);
     const auto input = get_key_event(*keystroke);
-    auto output = apply_input(input);
+    auto action = apply_input(input);
+    if (action.type == ActionType::Command) {
+      WinExec(action.command.c_str(), 1);
+    }
+
+    auto output = action.sequence;
     for (const auto& event : output) {
       *keystroke = get_interception_stroke(event);
       interception_send(context, device, &stroke, 1);

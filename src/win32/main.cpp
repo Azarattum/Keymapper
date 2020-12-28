@@ -94,7 +94,7 @@ bool update_focused_window(bool validate_when_window_inaccessible) {
   return true;
 }
 
-KeySequence apply_input(KeyEvent event) {
+Action apply_input(KeyEvent event) {
   return g_stage->apply_input(event);
 }
 

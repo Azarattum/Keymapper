@@ -22,7 +22,7 @@ private:
   void parse_command_and_mapping(It in_begin, It in_end,
                                  It out_begin, It out_end);
   KeySequence parse_input(It begin, It end);
-  KeySequence parse_output(It begin, It end);
+  Action parse_output(It begin, It end);
   std::string preprocess_ident(std::string ident) const;
   std::string preprocess(It begin, It end) const;
   void replace_logical_modifiers(KeyCode both, KeyCode left, KeyCode right);
@@ -30,10 +30,10 @@ private:
 
   bool has_command(const std::string& name) const;
   void add_command(std::string name, KeySequence input);
-  void add_mapping(KeySequence input, KeySequence output);
+  void add_mapping(KeySequence input, Action output);
   void begin_window(std::string class_filter, std::string title_filter,
                     bool system_filter_matched);
-  void add_mapping(std::string name, KeySequence output);
+  void add_mapping(std::string name, Action output);
 
   int m_line_no{ };
   Config m_config;

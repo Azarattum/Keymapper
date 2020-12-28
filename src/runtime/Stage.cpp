@@ -64,8 +64,8 @@ void Stage::activate_override_set(int index) {
 }
 
 void Stage::reuse_buffer(KeySequence&& buffer) {
-  m_output_buffer = std::move(buffer);
-  m_output_buffer.clear();
+  m_output_buffer.sequence = std::move(buffer);
+  m_output_buffer.sequence.clear();
 }
 
 void Stage::validate_state(const std::function<bool(KeyCode)>& is_down) {
@@ -86,7 +86,7 @@ void Stage::validate_state(const std::function<bool(KeyCode)>& is_down) {
     end(m_output_down));
 }
 
-KeySequence Stage::apply_input(const KeyEvent event) {
+Action Stage::apply_input(const KeyEvent event) {
   assert(event.state == KeyState::Down ||
          event.state == KeyState::Up);
 
@@ -146,12 +146,12 @@ void Stage::release_triggered(KeyCode key) {
   std::for_each(it, end(m_output_down),
     [&](const auto& k) {
       if (!k.temporarily_released)
-        m_output_buffer.push_back({ k.key, KeyState::Up });
+        m_output_buffer.sequence.push_back({ k.key, KeyState::Up });
     });
   m_output_down.erase(it, end(m_output_down));
 }
 
-const KeySequence& Stage::get_output(const Mapping& mapping) const {
+const Action& Stage::get_output(const Mapping& mapping) const {
   // look for override
   if (m_active_override_set) {
     const auto& override_set = *m_active_override_set;
@@ -171,8 +171,10 @@ void Stage::toggle_virtual_key(KeyCode key) {
     m_sequence.emplace_back(key, KeyState::Down);
 }
 
-void Stage::apply_output(const KeySequence& expression) {
-  for (const auto& event : expression)
+void Stage::apply_output(const Action& expression) {
+  m_output_buffer.type = expression.type;
+  m_output_buffer.command = expression.command;
+  for (const auto& event : expression.sequence)
     if (is_virtual_key(event.key))
       toggle_virtual_key(event.key);
     else
@@ -216,14 +218,14 @@ void Stage::update_output(const KeyEvent& event, KeyCode trigger) {
   if (event.state == KeyState::Up) {
     if (it != end(m_output_down)) {
       m_output_down.erase(it);
-      m_output_buffer.push_back(event);
+      m_output_buffer.sequence.push_back(event);
     }
   }
   else if (event.state == KeyState::Not) {
     // make sure it is released in output
     if (it != end(m_output_down)) {
       if (!it->temporarily_released) {
-        m_output_buffer.emplace_back(event.key, KeyState::Up);
+        m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
         it->temporarily_released = true;
       }
       it->suppressed = true;
@@ -235,7 +237,7 @@ void Stage::update_output(const KeyEvent& event, KeyCode trigger) {
     for (auto& output : m_output_down)
       if (output.temporarily_released && !output.suppressed) {
         output.temporarily_released = false;
-        m_output_buffer.emplace_back(output.key, KeyState::Down);
+        m_output_buffer.sequence.emplace_back(output.key, KeyState::Down);
         reapplied = true;
       }
 
@@ -245,11 +247,11 @@ void Stage::update_output(const KeyEvent& event, KeyCode trigger) {
     else {
       // already pressed, but something was reapplied in the meantime?
       if (reapplied)
-        m_output_buffer.emplace_back(event.key, KeyState::Up);
+        m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
 
       it->temporarily_released = false;
     }
-    m_output_buffer.emplace_back(event.key, KeyState::Down);
+    m_output_buffer.sequence.emplace_back(event.key, KeyState::Down);
   }
 }
 

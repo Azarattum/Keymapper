@@ -41,9 +41,9 @@ namespace {
 
   void replace_modifier(Command& command, KeyCode both, KeyCode key) {
     replace_key(command.input, both, key);
-    replace_key(command.default_mapping, both, key);
+    replace_key(command.default_mapping.sequence, both, key);
     for (auto& mapping : command.context_mappings)
-      replace_key(mapping.output, both, key);
+      replace_key(mapping.output.sequence, both, key);
   }
 
   void replace_not_key(KeySequence& sequence, KeyCode both, KeyCode left,
@@ -59,9 +59,9 @@ namespace {
   void replace_not_modifier(Command& command, KeyCode both, KeyCode left,
                             KeyCode right) {
     replace_not_key(command.input, both, left, right);
-    replace_not_key(command.default_mapping, both, left, right);
+    replace_not_key(command.default_mapping.sequence, both, left, right);
     for (auto& mapping : command.context_mappings)
-      replace_not_key(mapping.output, both, left, right);
+      replace_not_key(mapping.output.sequence, both, left, right);
   }
 } // namespace
 
@@ -74,7 +74,7 @@ Config ParseConfig::operator()(std::istream& is) {
 
   // automatically add mappings for common modifiers
   for (auto key : { Key::Shift, Key::Control, Key::AltLeft, Key::AltRight })
-    add_mapping( { { *key, KeyState::Down } }, { { *key, KeyState::Down } });
+    add_mapping( { { *key, KeyState::Down } }, { ActionType::Sequence, "", { { *key, KeyState::Down } }});
 
   auto line = std::string();
   while (is.good()) {
@@ -215,11 +215,15 @@ KeySequence ParseConfig::parse_input(It it, It end) {
   }
 }
 
-KeySequence ParseConfig::parse_output(It it, It end) {
+Action ParseConfig::parse_output(It it, It end) {
   skip_space(&it, end);
   trim_comment(it, &end);
+  if (*it == '/') {
+    std::string command = preprocess(it + 1, end);
+    return {ActionType::Command, command, KeySequence({})};
+  }
   try {
-    return m_parse_sequence(preprocess(it, end), false);
+    return {ActionType::Sequence, "", m_parse_sequence(preprocess(it, end), false)};
   }
   catch (const std::exception& ex) {
     error(ex.what());
@@ -280,7 +284,7 @@ void ParseConfig::add_command(std::string name, KeySequence input) {
   m_commands_mapped[std::move(name)] = false;
 }
 
-void ParseConfig::add_mapping(KeySequence input, KeySequence output) {
+void ParseConfig::add_mapping(KeySequence input, Action output) {
   assert(!input.empty());
   if (!m_config.contexts.empty())
     error("cannot map sequence in context");
@@ -297,7 +301,7 @@ void ParseConfig::begin_window(std::string class_filter,
     { std::move(class_filter), std::move(title_filter) });
 }
 
-void ParseConfig::add_mapping(std::string name, KeySequence output) {
+void ParseConfig::add_mapping(std::string name, Action output) {
   assert(!name.empty());
   const auto it = std::find_if(
     begin(m_config.commands), end(m_config.commands),
@@ -315,7 +319,7 @@ void ParseConfig::add_mapping(std::string name, KeySequence output) {
   }
   else {
     // set context default mapping
-    if (!it->default_mapping.empty())
+    if (!it->default_mapping.sequence.empty() || !it->default_mapping.command.empty())
       error("duplicate mapping of '" + name + "'");
     it->default_mapping = std::move(output);
   }
@@ -345,8 +349,8 @@ void ParseConfig::replace_logical_modifiers(KeyCode both, KeyCode left,
 void ParseConfig::replace_any_key_in_output() {
   const auto arbitrary_key = *Key::A;
   for (auto& command : m_config.commands) {
-    replace_key(command.default_mapping, any_key, arbitrary_key);
+    replace_key(command.default_mapping.sequence, any_key, arbitrary_key);
     for (auto& mapping : command.context_mappings)
-      replace_key(mapping.output, any_key, arbitrary_key);
+      replace_key(mapping.output.sequence, any_key, arbitrary_key);
   }
 }
