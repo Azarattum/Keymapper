@@ -77,24 +77,6 @@ bool grab_keyboard(int fd, bool grab) {
   return (::ioctl(fd, EVIOCGRAB, (grab ? 1 : 0)) == 0);
 }
 
-bool is_real(int fd) {
-  char led = 0;
-  ioctl(fd, EVIOCGLED(1), &led);
-  led = led & 1;
-
-  input_event ev = {EV_LED, LED_NUML, (u_int16_t) led};
-  write(fd, &ev, sizeof(input_event));
-
-  fd_set set;
-  FD_ZERO(&set);
-  FD_SET(fd, &set);
-  timeval timeout = {1};
-  if (select(fd + 1, &set, NULL, NULL, &timeout) <= 0)
-    return false;
-  read(fd, &ev, sizeof(input_event));
-  return ev.type == EV_MSC;
-}
-
 int open_event_device(int index) {
   const auto paths = { "/dev/input/event%d", "/dev/event%d" };
   for (const auto path : paths) {
@@ -109,19 +91,24 @@ int open_event_device(int index) {
   return -1;
 }
 
-int grab_first_keyboard() {
+std::vector<int> grab_all_keyboards() {
+  std::vector<int> keyboards({});
+
   for (auto i = 0; i < EVDEV_MINORS; ++i) {
     const auto fd = open_event_device(i);
     if (fd >= 0) {
       if (is_keyboard(fd) &&
           wait_until_keys_released(fd) &&
-          grab_keyboard(fd, true) &&
-          is_real(fd))
-        return fd;
-      ::close(fd);
+          grab_keyboard(fd, true)) {
+        keyboards.push_back(fd);
+      }
+      else {
+        ::close(fd);
+      }
     }
   }
-  return -1;
+
+  return keyboards;
 }
 
 void release_keyboard(int fd) {

@@ -49,7 +49,7 @@ if(NOT WIN32)
     src/linux/server/uinput_keyboard.cpp
     src/linux/server/uinput_keyboard.h
   )
-  target_link_libraries(keymapperd usb-1.0 udev)
+  target_link_libraries(keymapperd usb-1.0 udev pthread)
 else(NOT WIN32)
   option(ENABLE_INTERCEPTION "Enable Interception" TRUE)
   if(ENABLE_INTERCEPTION)

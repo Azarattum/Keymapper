@@ -52,6 +52,27 @@ namespace {
     return true;
   }
 
+  bool read(int fd, Action* action) {
+    auto type = uint8_t{ };
+    if (!read(fd, &type))
+      return false;
+    action->type = static_cast<ActionType>(type);
+    if (!read(fd, &(action->sequence)))
+      return false;
+
+    auto size = uint8_t{ };
+    if (!read(fd, &size))
+      return false;
+
+    char buffer[size + 1];
+    buffer[size] = 0;
+    read_all(fd, buffer, size);
+
+    action->command = std::string(buffer);
+    
+    return true;
+  }
+
   bool read_active_override_set(int fd, Stage& stage) {
     auto activate_override_set = int8_t{ };
     if (!read(fd, &activate_override_set))
@@ -73,7 +94,18 @@ void shutdown_ipc(int fd) {
   ::close(fd);
 }
 
-std::unique_ptr<Stage> read_config(int fd) {
+char *read_name(int fd) {
+  auto length = uint16_t{ };
+  if (!read(fd, &length))
+    return 0;
+  char *name = new char[length + 1];
+  name[length] = 0;
+  read_all(fd, name, length);
+
+  return name;
+}
+
+std::shared_ptr<Stage> read_config(int fd) {
   // receive commands
   auto commmand_count = uint16_t{ };
   if (!read(fd, &commmand_count))
@@ -83,9 +115,8 @@ std::unique_ptr<Stage> read_config(int fd) {
   auto input = KeySequence();
   Action output = {ActionType::Sequence, "", KeySequence()};
   for (auto i = 0; i < commmand_count; ++i) {
-    ///!READ HERE!
     if (!read(fd, &input) ||
-        !read(fd, &output.sequence))
+        !read(fd, &output))
       return nullptr;
     mappings.push_back({ std::move(input), std::move(output) });
   }
@@ -106,15 +137,14 @@ std::unique_ptr<Stage> read_config(int fd) {
 
     for (auto j = 0; j < overrides_count; ++j) {
       auto mapping_index = uint16_t{ };
-      ///!READ HERE!
       if (!read(fd, &mapping_index) ||
-          !read(fd, &output.sequence))
+          !read(fd, &output))
         return nullptr;
       overrides.push_back({ mapping_index, std::move(output) });
     }
   }
 
-  return std::make_unique<Stage>(
+  return std::make_shared<Stage>(
     std::move(mappings), std::move(override_sets));
 }
 

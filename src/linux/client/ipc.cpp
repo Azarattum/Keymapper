@@ -6,6 +6,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <sys/ipc.h>
+#include <pwd.h>
+#include <string.h>
 
 namespace {
   auto g_pipe_broken = false;
@@ -36,6 +38,13 @@ namespace {
       send(fd, event.state);
     }
   }
+
+  void send(int fd, const Action& action) {
+    send(fd, static_cast<uint8_t>(action.type));
+    send(fd, action.sequence);
+    send(fd, static_cast<uint8_t>(action.command.size()));
+    write_all(fd, action.command.c_str(), action.command.size());
+  }
 } // namespace
 
 int initialize_ipc(const char* fifo_filename) {
@@ -49,13 +58,25 @@ void shutdown_ipc(int fd) {
   ::close(fd);
 }
 
+bool send_name(int fd) {
+  uid_t uid = geteuid();
+  struct passwd *pw = getpwuid(uid);
+  char *name = 0;
+  if (pw)
+      name = pw->pw_name;
+  
+  send(fd, static_cast<uint16_t>(strlen(name)));
+  write_all(fd, name, strlen(name));
+
+  return !g_pipe_broken;
+}
+
 bool send_config(int fd, const Config& config) {
   // send mappings
   send(fd, static_cast<uint16_t>(config.commands.size()));
   for (const auto& command : config.commands) {
     send(fd, command.input);
-    ///!SEND HERE!
-    send(fd, command.default_mapping.sequence);
+    send(fd, command.default_mapping);
   }
 
   // send mapping overrides
@@ -73,8 +94,7 @@ bool send_config(int fd, const Config& config) {
     send(fd, static_cast<uint16_t>(context_mappings.size()));
     for (const auto& mapping : context_mappings) {
       send(fd, static_cast<uint16_t>(mapping.first));
-      ///!SEND HERE!
-      send(fd, mapping.second->output.sequence);
+      send(fd, mapping.second->output);
     }
   }
   return !g_pipe_broken;

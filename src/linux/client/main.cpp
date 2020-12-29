@@ -33,6 +33,12 @@ int main(int argc, char* argv[]) {
       ::sleep(1);
       continue;
     }
+    // send user's name
+    if (!send_name(ipc_fd)) {
+      shutdown_ipc(ipc_fd);
+      ::sleep(1);
+      continue;
+    }
     // initialize focused window detection
     auto focused_window = create_focused_window();
 

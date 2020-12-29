@@ -1,5 +1,6 @@
+#include <vector>
 #pragma once
 
-int grab_first_keyboard();
+std::vector<int> grab_all_keyboards();
 void release_keyboard(int fd);
 bool read_event(int fd, int* type, int* code, int* value);

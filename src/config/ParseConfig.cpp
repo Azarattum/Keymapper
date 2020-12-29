@@ -217,12 +217,12 @@ KeySequence ParseConfig::parse_input(It it, It end) {
 
 Action ParseConfig::parse_output(It it, It end) {
   skip_space(&it, end);
-  trim_comment(it, &end);
   if (*it == '/') {
-    std::string command = preprocess(it + 1, end);
+    std::string command = std::string(it + 1, end);
     return {ActionType::Command, command, KeySequence({})};
   }
   try {
+    trim_comment(it, &end);
     return {ActionType::Sequence, "", m_parse_sequence(preprocess(it, end), false)};
   }
   catch (const std::exception& ex) {

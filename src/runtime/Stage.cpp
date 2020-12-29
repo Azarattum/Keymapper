@@ -64,6 +64,8 @@ void Stage::activate_override_set(int index) {
 }
 
 void Stage::reuse_buffer(KeySequence&& buffer) {
+  m_output_buffer.type = ActionType::Sequence;
+  m_output_buffer.command = "";
   m_output_buffer.sequence = std::move(buffer);
   m_output_buffer.sequence.clear();
 }
