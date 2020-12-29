@@ -1,4 +1,4 @@
-# UniversalHotkeyer
+# Universal Hotkeyer
 
 A cross-platform context-aware hot keyer. It allows to:
 - Redefine keyboard shortcuts system-wide or per application.
