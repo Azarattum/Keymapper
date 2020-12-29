@@ -9,8 +9,8 @@
 #include <pthread.h>
 
 namespace {
-  const auto ipc_fifo_filename = "/tmp/keymapper";
-  const auto uinput_keyboard_name = "Keymapper";
+  const auto ipc_fifo_filename = "/tmp/hotkeyer";
+  const auto uinput_keyboard_name = "Hotkeyer";
   const std::vector<int> *keyboards_ptr = nullptr;
   bool is_pipe_broken = false;
 }

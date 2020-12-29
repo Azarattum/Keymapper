@@ -6,7 +6,7 @@
 #include "LimitSingleInstance.h"
 #include "common.h"
 
-const auto config_filename = L"keymapper.conf";
+const auto config_filename = L"hotkeyer.conf";
 const int update_interval_ms = 500;
 
 namespace {

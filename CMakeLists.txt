@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(keymapper LANGUAGES CXX)
+project(hotkeyer LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -25,7 +25,7 @@ set(SOURCES_RUNTIME
 )
 
 if(NOT WIN32)
-  add_executable(keymapper
+  add_executable(hotkeyer
     ${SOURCES_CONFIG}
     src/linux/client/ConfigFile.cpp
     src/linux/client/ConfigFile.h
@@ -37,9 +37,9 @@ if(NOT WIN32)
     src/linux/client/ipc.h
     src/linux/client/main.cpp
   )
-  target_link_libraries(keymapper X11)
+  target_link_libraries(hotkeyer X11)
 
-  add_executable(keymapperd
+  add_executable(hotkeyerd
     ${SOURCES_RUNTIME}
     src/linux/server/ipc.cpp
     src/linux/server/ipc.h
@@ -49,14 +49,14 @@ if(NOT WIN32)
     src/linux/server/uinput_keyboard.cpp
     src/linux/server/uinput_keyboard.h
   )
-  target_link_libraries(keymapperd usb-1.0 udev pthread)
+  target_link_libraries(hotkeyerd usb-1.0 udev pthread)
 else(NOT WIN32)
   option(ENABLE_INTERCEPTION "Enable Interception" TRUE)
   if(ENABLE_INTERCEPTION)
     add_compile_definitions(ENABLE_INTERCEPTION)
   endif(ENABLE_INTERCEPTION)
 
-  add_executable(keymapper WIN32
+  add_executable(hotkeyer WIN32
     ${SOURCES_CONFIG}
     ${SOURCES_RUNTIME}
     src/win32/ConfigFile.cpp
@@ -77,7 +77,7 @@ endif(NOT WIN32)
 
 option(ENABLE_TEST "Enable tests")
 if(ENABLE_TEST)
-  add_executable(test-keymapper
+  add_executable(test-hotkeyer
     ${SOURCES_CONFIG}
     ${SOURCES_RUNTIME}
     src/test/catch.hpp
@@ -92,8 +92,8 @@ if(ENABLE_TEST)
 endif(ENABLE_TEST)
 
 if(NOT WIN32)
-  install(TARGETS keymapper DESTINATION "bin")
-  install(TARGETS keymapperd DESTINATION "bin")
+  install(TARGETS hotkeyer DESTINATION "bin")
+  install(TARGETS hotkeyerd DESTINATION "bin")
 else(NOT WIN32)
-  install(TARGETS keymapper DESTINATION .)
+  install(TARGETS hotkeyer DESTINATION .)
 endif(NOT WIN32)

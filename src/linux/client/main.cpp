@@ -7,8 +7,8 @@
 #include <unistd.h>
 
 namespace {
-  const auto ipc_fifo_filename = "/tmp/keymapper";
-  const auto config_filename = get_home_directory() + "/.config/keymapper.conf";
+  const auto ipc_fifo_filename = "/tmp/hotkeyer";
+  const auto config_filename = get_home_directory() + "/.config/hotkeyer.conf";
   const auto update_interval_ms = 50;
 }
 

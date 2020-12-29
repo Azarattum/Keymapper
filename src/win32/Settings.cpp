@@ -27,9 +27,11 @@ void print_help_message(const wchar_t* argv0) {
   const auto version = std::string(
 #include "../_version.h"
   );
-  print(("keymapper " + version + " (c) 2019-2020 by Albert Kalchmair\n"
+  print((
+    "UniversalHotkeyer fork by Azarattum\n"
+    "(from: keymapper %s(c) 2019-2020 by Albert Kalchmair)\n"
     "\n"
-    "Usage: keymapper [-options]\n"
+    "Usage: hotkeyer [-options]\n"
     "  -c, --config <path>  configuration file.\n"
     "  -u, --update         reload configuration file when it changes.\n"
     "  -i, --interception   use interception.\n"
