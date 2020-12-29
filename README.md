@@ -12,12 +12,12 @@ This is a fork of [houmaster's keymapper](https://github.com/houmaster/keymapper
 ## Configuration
 
 Unless overridden, using the command line argument ```-c```, the configuration is read from:
-  * on Linux: ```$HOME/.config/keymapper.conf```
-  * on Windows: ```keymapper.conf``` in the working directory.
+  * on Linux: ```$HOME/.config/hotkeyer.conf```
+  * on Windows: ```hotkeyer.conf``` in the working directory.
 
-Keynames: http://keycode.info/
+Keynames: https://keycode.info/
 
-*Simple keymapper.conf:*
+*Simple hotkeyer.conf:*
 ```bash
 O >>                  # Supress key
 O >> /firefox         # Bind key to command
@@ -27,7 +27,7 @@ C D >> D C            # Remap sequence (Pressed successively)
 Control{Q} >> Alt{F4} # Remap sequence (Hold, press)
 ```
 
-*Context keymapper.conf:*
+*Context hotkeyer.conf:*
 ```bash
 #Context syntax: [Window system="..." title="..." class="..."]
 (Shift Control){T} >> terminal
@@ -40,7 +40,7 @@ terminal >> /powershell -NoExit -Command "cd ~"
 ```
 
 
-*Virtual keys keymapper.conf:*
+*Virtual keys hotkeyer.conf:*
 ```bash
 # Optional alias for a virtual key
 Boss = Virtual1
@@ -56,6 +56,13 @@ Boss{A} >> B
 ```
 
 For more detailed instructions check out: https://github.com/houmaster/keymapper#configuration
+
+## Arguments:
+| Long            | Short     | Description                                                        |
+| --------------- | --------- | ------------------------------------------------------------------ |
+| --config <path> | -c <path> | Specify configuration file                                         |
+| --update        | -u        | Reload configuration file when it changes                          |
+| --interception  | -i        | Use [*interception.dll*](https://github.com/oblitum/Interception/) |
 
 ## Building
 
