@@ -77,13 +77,31 @@ bool grab_keyboard(int fd, bool grab) {
   return (::ioctl(fd, EVIOCGRAB, (grab ? 1 : 0)) == 0);
 }
 
+bool is_real(int fd) {
+  char led = 0;
+  ioctl(fd, EVIOCGLED(1), &led);
+  led = led & 1;
+
+  input_event ev = {EV_LED, LED_NUML, (u_int16_t) led};
+  write(fd, &ev, sizeof(input_event));
+
+  fd_set set;
+  FD_ZERO(&set);
+  FD_SET(fd, &set);
+  timeval timeout = {1};
+  if (select(fd + 1, &set, NULL, NULL, &timeout) <= 0)
+    return false;
+  read(fd, &ev, sizeof(input_event));
+  return ev.type == EV_MSC;
+}
+
 int open_event_device(int index) {
   const auto paths = { "/dev/input/event%d", "/dev/event%d" };
   for (const auto path : paths) {
     auto buffer = std::array<char, 128>();
     std::snprintf(buffer.data(), buffer.size(), path, index);
     do {
-      const auto fd = ::open(buffer.data(), O_RDONLY);
+      const auto fd = ::open(buffer.data(), O_RDWR);
       if (fd >= 0)
         return fd;
     } while (errno == EINTR);
@@ -97,7 +115,8 @@ int grab_first_keyboard() {
     if (fd >= 0) {
       if (is_keyboard(fd) &&
           wait_until_keys_released(fd) &&
-          grab_keyboard(fd, true))
+          grab_keyboard(fd, true) &&
+          is_real(fd))
         return fd;
       ::close(fd);
     }

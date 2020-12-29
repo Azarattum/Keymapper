@@ -54,7 +54,8 @@ bool send_config(int fd, const Config& config) {
   send(fd, static_cast<uint16_t>(config.commands.size()));
   for (const auto& command : config.commands) {
     send(fd, command.input);
-    send(fd, command.default_mapping);
+    ///!SEND HERE!
+    send(fd, command.default_mapping.sequence);
   }
 
   // send mapping overrides
@@ -72,7 +73,8 @@ bool send_config(int fd, const Config& config) {
     send(fd, static_cast<uint16_t>(context_mappings.size()));
     for (const auto& mapping : context_mappings) {
       send(fd, static_cast<uint16_t>(mapping.first));
-      send(fd, mapping.second->output);
+      ///!SEND HERE!
+      send(fd, mapping.second->output.sequence);
     }
   }
   return !g_pipe_broken;

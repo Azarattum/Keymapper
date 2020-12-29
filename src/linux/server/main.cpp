@@ -42,7 +42,12 @@ int main() {
                 static_cast<KeyCode>(code),
                 (value == 0 ? KeyState::Up : KeyState::Down),
               };
-              auto output = stage->apply_input(event);
+              auto action =  stage->apply_input(event);
+              if (action.type == ActionType::Command) {
+                system(action.command.c_str());
+              }
+
+              auto output = action.sequence;
               send_key_sequence(uinput_fd, output);
               stage->reuse_buffer(std::move(output));
             }

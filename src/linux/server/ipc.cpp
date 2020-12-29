@@ -81,10 +81,11 @@ std::unique_ptr<Stage> read_config(int fd) {
 
   auto mappings = std::vector<Mapping>();
   auto input = KeySequence();
-  auto output = KeySequence();
+  Action output = {ActionType::Sequence, "", KeySequence()};
   for (auto i = 0; i < commmand_count; ++i) {
+    ///!READ HERE!
     if (!read(fd, &input) ||
-        !read(fd, &output))
+        !read(fd, &output.sequence))
       return nullptr;
     mappings.push_back({ std::move(input), std::move(output) });
   }
@@ -105,8 +106,9 @@ std::unique_ptr<Stage> read_config(int fd) {
 
     for (auto j = 0; j < overrides_count; ++j) {
       auto mapping_index = uint16_t{ };
+      ///!READ HERE!
       if (!read(fd, &mapping_index) ||
-          !read(fd, &output))
+          !read(fd, &output.sequence))
         return nullptr;
       overrides.push_back({ mapping_index, std::move(output) });
     }
