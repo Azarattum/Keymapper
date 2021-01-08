@@ -27,6 +27,17 @@ C D >> D C            # Remap sequence (Pressed successively)
 Control{Q} >> Alt{F4} # Remap sequence (Hold, press)
 ```
 
+*Exculisive key hotkeyer.conf:*
+```bash
+# Triggers when the key is released and no other keys were pressed
+
+# To achive Windows-like start menu behaviour:
+~Meta >> /~/.scripts/launcher.sh
+# While other combinations do not trigger the script above
+Meta{Q} >> AltLeft{F4}
+```
+
+
 *Context hotkeyer.conf:*
 ```bash
 #Context syntax: [Window system="..." title="..." class="..."]

@@ -17,6 +17,7 @@ enum class KeyState : uint16_t {
   UpAsync,     // internally (in input expression)
   DownAsync,   // internally (in input expression)
   DownMatched, // internally (in sequence)
+  Exclusive,
 };
 
 using KeyCode = uint16_t;

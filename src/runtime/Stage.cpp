@@ -133,6 +133,14 @@ Action Stage::apply_input(const KeyEvent event) {
       if (result == MatchResult::match) {
         apply_output(get_output(mapping));
         finish_sequence();
+
+        // finalize output for exclusive keys
+        const auto last = *(mapping.input.end() - 1);
+        if (last.state == KeyState::Exclusive && m_output_buffer.sequence.size() > 0) {
+          const auto key = (*(m_output_buffer.sequence.end() - 1)).key;
+          m_output_buffer.sequence.push_back({key, KeyState::Up});
+        }
+
         return std::move(m_output_buffer);
       }
     }

@@ -55,10 +55,25 @@ MatchResult MatchKeySequence::operator()(const KeySequence& expression,
         [&](const KeyEvent& e) {
           return (unifiable(e.state, KeyState::Down) &&
                   unifiable(e.key, ee.key));
-        });
+      });
       if (it != cend(sequence))
         return MatchResult::no_match;
       ++e;
+    }
+    else if (ee.state == KeyState::Exclusive && se.state == KeyState::Down && unifiable(ee.key, se.key)) {
+      // check the next event to be up
+      ++s;
+      if (s >= sequence.size()) {
+        return MatchResult::might_match;
+      }
+      
+      const auto& ne = sequence[s];
+      if (unifiable(ee.key, ne.key) && ne.state == KeyState::Up) {
+        ++s;
+        ++e;
+      } else {
+        return MatchResult::no_match;
+      }
     }
     else if (unifiable(se, ee)) {
       // direct match
