@@ -37,7 +37,12 @@ if(NOT WIN32)
     src/linux/client/ipc.h
     src/linux/client/main.cpp
   )
-  target_link_libraries(hotkeyer X11)
+
+  option(ENABLE_X11 "Enable X11 context awareness" TRUE)
+  if(ENABLE_X11)
+    add_compile_definitions(ENABLE_X11)
+    target_link_libraries(hotkeyer X11)
+  endif()
 
   add_executable(hotkeyerd
     ${SOURCES_RUNTIME}
@@ -73,7 +78,7 @@ else(NOT WIN32)
     src/win32/run_interception.cpp
     src/win32/win.h
   )
-endif(NOT WIN32)
+endif()
 
 option(ENABLE_TEST "Enable tests")
 if(ENABLE_TEST)
@@ -89,7 +94,7 @@ if(ENABLE_TEST)
     src/test/test3_Stage.cpp
     src/test/test4_Fuzz.cpp
   )
-endif(ENABLE_TEST)
+endif()
 
 if(NOT WIN32)
   install(TARGETS hotkeyer DESTINATION "bin")
