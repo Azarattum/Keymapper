@@ -101,7 +101,7 @@ private:
   Atom m_net_active_window_atom{ };
   Atom m_net_wm_name_atom{ };
   Atom m_utf8_string_atom{ };
-  Window m_focused_window{ -1UL };
+  Window m_focused_window{ };
   std::string m_focused_window_class;
   std::string m_focused_window_title;
 };

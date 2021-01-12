@@ -315,14 +315,19 @@ void ParseConfig::add_mapping(std::string name, Action output) {
     if (!it->context_mappings.empty() &&
         it->context_mappings.back().context_index == context_index)
       error("duplicate mapping override for '" + name + "'");
-    it->context_mappings.push_back({ context_index, std::move(output) });
+
+    if (!m_config.contexts[context_index].window_class_filter.empty() || 
+        !m_config.contexts[context_index].window_title_filter.empty()) {
+      it->context_mappings.push_back({ context_index, std::move(output) });
+      m_commands_mapped[name] = true;
+      return;
+    }
   }
-  else {
-    // set context default mapping
-    if (!it->default_mapping.sequence.empty() || !it->default_mapping.command.empty())
-      error("duplicate mapping of '" + name + "'");
-    it->default_mapping = std::move(output);
-  }
+
+  // set context default mapping
+  if (!it->default_mapping.sequence.empty() || !it->default_mapping.command.empty())
+    error("duplicate mapping of '" + name + "'");
+  it->default_mapping = std::move(output);
   m_commands_mapped[name] = true;
 }
 
