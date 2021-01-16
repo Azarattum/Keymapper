@@ -8,6 +8,7 @@
 #include <sys/ipc.h>
 #include <pwd.h>
 #include <string.h>
+#include <regex>
 
 namespace {
   auto g_pipe_broken = false;
@@ -67,6 +68,22 @@ bool send_name(int fd) {
   
   send(fd, static_cast<uint16_t>(strlen(name)));
   write_all(fd, name, strlen(name));
+
+  return !g_pipe_broken;
+}
+
+bool send_environment(int fd) {
+  std::regex escape("(\"|\\\\)");
+  std::string env;
+
+  for (int i = 0; environ[i] != NULL; i++) {
+    env.append(" \"");
+    env.append(std::regex_replace(environ[i], escape, "\\$1"));
+    env.append("\"");
+  }
+
+  send(fd, static_cast<uint16_t>(strlen(env.c_str())));
+  write_all(fd, env.c_str(), strlen(env.c_str()));
 
   return !g_pipe_broken;
 }

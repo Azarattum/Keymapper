@@ -17,6 +17,7 @@ namespace {
 
 struct hook_data {
   char *name;
+  char *env;
   std::shared_ptr<Stage> stage;
   int ipc_fd;
   int keyboard;
@@ -53,6 +54,9 @@ void *hook(void *thread_arg) {
           std::string execute = "su \"";
           execute.append(std::regex_replace(data.name, escape, "\\$1"));
           execute.append("\" -c \"");
+          execute.append("export");
+          execute.append(std::regex_replace(data.env, escape, "\\$1"));
+          execute.append("; ");
           execute.append(std::regex_replace(action.command, escape, "\\$1"));
           execute.append(" &\" > /dev/null 2>&1");
 
@@ -91,6 +95,7 @@ int main() {
     if (ipc_fd < 0)
       return 1;
     char *name = read_name(ipc_fd);
+    char *env = read_env(ipc_fd);
     if (name) {
       const auto stage = read_config(ipc_fd);
       if (stage) {
@@ -104,6 +109,7 @@ int main() {
           for (int i = 0; i < keyboards.size(); i++)
           {
             args[i].name = name;
+            args[i].env = env;
             args[i].ipc_fd = ipc_fd;
             args[i].stage = stage;
             args[i].input = uinput_fd;

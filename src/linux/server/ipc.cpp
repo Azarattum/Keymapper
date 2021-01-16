@@ -105,6 +105,17 @@ char *read_name(int fd) {
   return name;
 }
 
+char *read_env(int fd) {
+  auto length = uint16_t{ };
+  if (!read(fd, &length))
+    return 0;
+  char *env = new char[length + 1];
+  env[length] = 0;
+  read_all(fd, env, length);
+
+  return env;
+}
+
 std::shared_ptr<Stage> read_config(int fd) {
   // receive commands
   auto commmand_count = uint16_t{ };
