@@ -29,7 +29,7 @@ void print_help_message(const wchar_t* argv0) {
   );
   print((
     "UniversalHotkeyer fork by Azarattum\n"
-    "(from: keymapper %s(c) 2019-2020 by Albert Kalchmair)\n"
+    "(from: keymapper %s(c) 2019-2021 by Albert Kalchmair)\n"
     "\n"
     "Usage: hotkeyer [-options]\n"
     "  -c, --config <path>  configuration file.\n"

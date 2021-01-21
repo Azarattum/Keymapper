@@ -37,7 +37,7 @@ void print_help_message(const char* argv0) {
 
   std::printf(
     "UniversalHotkeyer fork by Azarattum\n"
-    "(from: keymapper %s(c) 2019-2020 by Albert Kalchmair)\n"
+    "(from: keymapper %s(c) 2019-2021 by Albert Kalchmair)\n"
     "\n"
     "Usage: %s [-options]\n"
     "  -c, --config <path>  configuration file.\n"

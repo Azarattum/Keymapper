@@ -5,7 +5,7 @@
 #include <iterator>
 
 namespace {
-  KeySequence::iterator find_key(KeySequence& sequence, KeyCode key) {
+  KeySequence::const_iterator find_key(const KeySequence& sequence, KeyCode key) {
     return std::find_if(begin(sequence), end(sequence),
       [&](const auto& ev) { return ev.key == key; });
   }
@@ -95,9 +95,12 @@ Action Stage::apply_input(const KeyEvent event) {
   if (event.state == KeyState::Down) {
     // merge key repeats
     auto it = find_key(m_sequence, event.key);
-    if (it != end(m_sequence))
-      if (it->state == KeyState::DownMatched)
+    if (it != end(m_sequence)) {
+      const auto is_repeat = !std::count(m_sequence.begin(), m_sequence.end(),
+        KeyEvent{ event.key, KeyState::Up });
+      if (is_repeat)
         m_sequence.erase(it);
+    }
   }
   m_sequence.push_back(event);
 
@@ -181,14 +184,29 @@ void Stage::toggle_virtual_key(KeyCode key) {
     m_sequence.emplace_back(key, KeyState::Down);
 }
 
+void Stage::output_current_sequence(const Action& expression, KeyCode trigger) {
+  for (const auto& event : m_sequence) {
+    const auto it = find_key(expression.sequence, event.key);
+    if (it == expression.sequence.end() || it->state != KeyState::Not)
+      update_output(event, trigger);
+  }
+}
+
 void Stage::apply_output(const Action& expression) {
   m_output_buffer.type = expression.type;
   m_output_buffer.command = expression.command;
+
   for (const auto& event : expression.sequence)
-    if (is_virtual_key(event.key))
+    if (is_virtual_key(event.key)) {
       toggle_virtual_key(event.key);
-    else
+    }
+    else if (event.key == any_key) {
+      if (event.state == KeyState::Down)
+        output_current_sequence(expression, m_sequence.back().key);
+    }
+    else {
       update_output(event, m_sequence.back().key);
+    }
 }
 
 void Stage::forward_from_sequence() {

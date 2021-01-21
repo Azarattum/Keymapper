@@ -40,16 +40,24 @@ Meta{Q} >> AltLeft{F4}
 
 *Context hotkeyer.conf:*
 ```bash
-#Context syntax: [Window system="..." title="..." class="..."]
+# Context syntax: [system="..." title="..." class="..."]
 (Shift Control){T} >> terminal
 
-[Window system="Linux"]
+[system="Linux"]
 terminal >> /cd ~; st
 
-[Window system="Windows"]
+[system="Windows"]
 terminal >> /powershell -NoExit -Command "cd ~"
 ```
 
+*Any-key hotkeyer.conf:*
+```bash
+# Special 'Any' key to match all the keys or current stroke
+
+# Keep Control-A but map A to B
+Control{Any} >> Any
+A >> B
+```
 
 *Virtual keys hotkeyer.conf:*
 ```bash
@@ -59,10 +67,10 @@ Boss = Virtual1
 # Virtual1/Boss is toggled whenever ScrollLock is pressed
 ScrollLock >> Boss
 
-# map A to B when Virtual1/Boss is down
+# Map A to B when Virtual1/Boss is down
 Boss{A} >> B
 
-# map E to F when Virtual1/Boss is NOT down
+# Map E to F when Virtual1/Boss is NOT down
 !Boss E >> F
 ```
 

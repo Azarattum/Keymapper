@@ -15,7 +15,7 @@ private:
 
   [[noreturn]] void error(std::string message);
   void parse_line(It begin, It end);
-  void parse_directive(It begin, It end);
+  void parse_context(It begin, It end);
   void parse_macro(std::string name, It begin, It end);
   void parse_mapping(std::string name, It begin, It end);
   std::string parse_command_name(It begin, It end) const;
@@ -26,13 +26,10 @@ private:
   std::string preprocess_ident(std::string ident) const;
   std::string preprocess(It begin, It end) const;
   void replace_logical_modifiers(KeyCode both, KeyCode left, KeyCode right);
-  void replace_any_key_in_output();
 
   bool has_command(const std::string& name) const;
   void add_command(std::string name, KeySequence input);
   void add_mapping(KeySequence input, Action output);
-  void begin_window(std::string class_filter, std::string title_filter,
-                    bool system_filter_matched);
   void add_mapping(std::string name, Action output);
 
   int m_line_no{ };

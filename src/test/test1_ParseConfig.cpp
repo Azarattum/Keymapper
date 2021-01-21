@@ -105,6 +105,15 @@ TEST_CASE("Problems", "[ParseConfig]") {
     C >> CommandA
   )";
   REQUIRE_THROWS(parse_config(string));
+
+  // no default mapping (which is ok)
+  string = R"(
+    C >> CommandA
+
+    [window class='']
+    CommandA >> D
+  )";
+  REQUIRE_NOTHROW(parse_config(string));
 }
 
 //--------------------------------------------------------------------
@@ -123,6 +132,17 @@ TEST_CASE("Macros", "[ParseConfig]") {
     Space = Enter
   )";
   REQUIRE_THROWS(parse_config(string));
+}
+
+//--------------------------------------------------------------------
+
+TEST_CASE("Old and new context format", "[ParseConfig]") {
+  auto string = R"(
+    [window class='test' title=test]
+    [Window class='test' title=test]
+    [class='test' title=test]
+  )";
+  REQUIRE_NOTHROW(parse_config(string));
 }
 
 //--------------------------------------------------------------------
