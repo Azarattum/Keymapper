@@ -27,8 +27,7 @@ void print_help_message(const wchar_t* argv0) {
   const auto version = std::string(
 #include "../_version.h"
   );
-  print((
-    "UniversalHotkeyer fork by Azarattum\n"
+  print("UniversalHotkeyer fork by Azarattum\n"
     "(from: keymapper %s(c) 2019-2021 by Albert Kalchmair)\n"
     "\n"
     "Usage: hotkeyer [-options]\n"
@@ -39,5 +38,5 @@ void print_help_message(const wchar_t* argv0) {
     "All Rights Reserved.\n"
     "This program comes with absolutely no warranty.\n"
     "See the GNU General Public License, version 3 for details.\n"
-    "\n").c_str());
+    "\n");
 }
