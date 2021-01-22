@@ -7,7 +7,7 @@ A cross-platform context-aware hot keyer. It allows to:
 - Share configuration files between multiple systems (GNU/Linux, Windows)
 - Execute shell commands on any shortcut
 
-This is a fork of [houmaster's keymapper](https://github.com/houmaster/keymapper). It extends the functionality of a keyboard remapper to allow binding shell commands on your keys as well as fixes some bugs of the original project.
+This is a fork of [houmain's keymapper](https://github.com/houmaster/keymapper). It extends the functionality of a keyboard remapper to allow binding shell commands on your keys as well as fixes some bugs of the original project.
 
 ## Configuration
 
