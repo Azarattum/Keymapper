@@ -32,15 +32,17 @@ public:
   }
 
   bool update() {
-    const auto window = get_focused_window();
-    if (window == m_focused_window)
-      return false;
-
     // TODO: is there a better way to prevent races?
     const auto handler = XSetErrorHandler(&ignore_errors);
+
+    const auto window = get_focused_window();
+    const auto title = get_window_title(window);
+    if (window == m_focused_window && !title.compare(m_focused_window_title))
+      return false;
+
     m_focused_window = window;
+    m_focused_window_title = title;
     m_focused_window_class = get_window_class(window);
-    m_focused_window_title = get_window_title(window);
     XSetErrorHandler(handler);
 
     return true;

@@ -11,17 +11,18 @@ public:
 
   bool update() {
     const auto hwnd = GetForegroundWindow();
-    if (hwnd == m_current)
+    auto buffer = std::array<char, 256>();
+    GetWindowTextA(hwnd, buffer.data(), static_cast<int>(buffer.size()));
+
+    if (hwnd == m_current && !std::string(buffer.data()).compare(m_title))
       return false;
 
     m_current = hwnd;
+    m_title = buffer.data();
 
-    auto buffer = std::array<char, 256>();
     GetClassNameA(hwnd, buffer.data(), static_cast<int>(buffer.size()));
     m_class = buffer.data();
 
-    GetWindowTextA(hwnd, buffer.data(), static_cast<int>(buffer.size()));
-    m_title = buffer.data();
     return true;
   }
 
