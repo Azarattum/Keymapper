@@ -76,11 +76,34 @@ Boss{A} >> B
 
 For more detailed instructions check out: https://github.com/houmaster/keymapper#configuration
 
-## Arguments:
+## Installation
+
+### Linux
+- Install [AUR package](https://aur.archlinux.org/packages/hotkeyer-git) (for arch based) or download the [latest binaries](https://github.com/Azarattum/UniversalHotkeyer/releases/latest)
+- Create [configuration](#configuration)
+- Enable & start the service
+```sh
+systemctl enable hotkeyer
+systemctl start hotkeyer
+```
+- If your environment supports [XDG Autostart](https://wiki.archlinux.org/index.php/XDG_Autostart), just relogin. Otherwise, manually start:
+```sh
+./hotkeyer
+```
+
+### Windows
+- Download the [latest release](https://github.com/Azarattum/UniversalHotkeyer/releases/latest) for Windows
+- Put [configuration](#configuration) in the binary's directory
+- Run the executable
+- Optional: run as administrator/use [*interception.dll*](https://github.com/oblitum/Interception/) for complete compatibility
+- Optional: add the program to autostart
+
+## Arguments
 | Long            | Short     | Description                                                        |
 | --------------- | --------- | ------------------------------------------------------------------ |
 | --config <path> | -c <path> | Specify configuration file                                         |
 | --update        | -u        | Reload configuration file when it changes                          |
+| --verbose       | -v        | Enable verbose output                                              |
 | --interception  | -i        | Use [*interception.dll*](https://github.com/oblitum/Interception/) |
 
 ## Building

@@ -1,5 +1,15 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.12.0)
 project(hotkeyer LANGUAGES CXX)
+
+set(GIT_COMMIT_LAST_TAG "unknown")
+find_package(Git)
+if(GIT_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags
+                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                  OUTPUT_VARIABLE GIT_COMMIT_LAST_TAG
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+configure_file("src/version.h.in" "${CMAKE_SOURCE_DIR}/src/_version.h")
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -35,6 +45,7 @@ if(NOT WIN32)
     src/linux/client/Settings.h
     src/linux/client/ipc.cpp
     src/linux/client/ipc.h
+    src/linux/client/output.h
     src/linux/client/main.cpp
   )
 
@@ -50,11 +61,14 @@ if(NOT WIN32)
     src/linux/server/ipc.h
     src/linux/server/GrabbedKeyboards.cpp
     src/linux/server/GrabbedKeyboards.h
+    src/linux/server/output.h
     src/linux/server/main.cpp
     src/linux/server/uinput_keyboard.cpp
     src/linux/server/uinput_keyboard.h
+    src/linux/server/Settings.cpp
+    src/linux/server/Settings.h
   )
-  target_link_libraries(hotkeyerd usb-1.0 udev pthread)
+  target_link_libraries(hotkeyerd usb-1.0 udev)
 else(NOT WIN32)
   option(ENABLE_INTERCEPTION "Enable Interception" TRUE)
   if(ENABLE_INTERCEPTION)

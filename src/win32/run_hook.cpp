@@ -4,7 +4,7 @@
 #include <string>
 
 namespace {
-  const auto window_class_name = L"Keymapper";
+  const auto window_class_name = L"Hotkeyer";
   const auto injected_ident = ULONG_PTR(0xADDED);
 
   HINSTANCE g_instance;

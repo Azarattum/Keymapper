@@ -5,15 +5,7 @@
 bool interpret_commandline(Settings& settings, int argc, char* argv[]) {
   for (auto i = 1; i < argc; i++) {
     const auto argument = std::string(argv[i]);
-    if (argument == "-u" || argument == "--update") {
-      settings.auto_update_config = true;
-    }
-    else if (argument == "-c" || argument == "--config") {
-      if (++i >= argc)
-        return false;
-      settings.config_file_path = argv[i];
-    }
-    else if (argument == "-v" || argument == "--verbose") {
+    if (argument == "-v" || argument == "--verbose") {
       settings.verbose = true;
     }
     else {
@@ -40,11 +32,9 @@ void print_help_message(const char* argv0) {
 
   std::printf(
     "UniversalHotkeyer %sfork by Azarattum\n"
-    "(from: keymapper (c) 2019-2021 by Albert Kalchmair)\n"
+    "(from: keymapperd (c) 2019-2021 by Albert Kalchmair)\n"
     "\n"
     "Usage: %s [-options]\n"
-    "  -c, --config <path>  configuration file.\n"
-    "  -u, --update         reload configuration file when it changes.\n"
     "  -v, --verbose        enable verbose output.\n"
     "  -h, --help           print this help.\n"
     "\n"
