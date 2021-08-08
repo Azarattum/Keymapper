@@ -74,6 +74,18 @@ Boss{A} >> B
 !Boss E >> F
 ```
 
+*Output on key release hotkeyer.conf:*
+```bash
+# Send "cmd" after the Windows run dialog appeared
+Win{C} >> Win{R} ^ C M D Enter
+
+# Prevent key repeat
+A >> B^
+
+# Output B when A is released
+A >> ^B
+```
+
 For more detailed instructions check out: https://github.com/houmaster/keymapper#configuration
 
 ## Installation
