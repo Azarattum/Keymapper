@@ -16,6 +16,9 @@ bool interpret_commandline(Settings& settings, int argc, wchar_t* argv[]) {
     else if (argument == L"-i" || argument == L"--interception") {
       settings.run_interception = true;
     }
+    else if (argument == L"-v" || argument == L"--verbose") {
+      settings.verbose = true;
+    }
     else {
       return false;
     }
@@ -39,6 +42,8 @@ void print_help_message(const wchar_t* argv0) {
     "  -c, --config <path>  configuration file.\n"
     "  -u, --update         reload configuration file when it changes.\n"
     "  -i, --interception   use interception.\n"
+    "  -v, --verbose        enable verbose output.\n"
+    "  -h, --help           print this help.\n"
     "\n"
     "All Rights Reserved.\n"
     "This program comes with absolutely no warranty.\n"

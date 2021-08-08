@@ -1,6 +1,7 @@
 
 #include "common.h"
 #include "config/Key.h"
+#include "Wtsapi32.h"
 #include <string>
 
 namespace {
@@ -11,6 +12,7 @@ namespace {
   HHOOK g_keyboard_hook;
   bool g_sending_key;
   std::vector<INPUT> g_send_buffer;
+  bool g_session_changed;
 
   KeyEvent get_key_event(WPARAM wparam, const KBDLLHOOKSTRUCT& kbd) {
     auto key = static_cast<KeyCode>(kbd.scanCode |
@@ -45,33 +47,47 @@ namespace {
   }
 
 #if !defined(NDEBUG)
-  void print_event(const KeyEvent& e) {
-    auto key_name = [](auto key) {
+  std::string format(const KeyEvent& e) {
+    const auto key_name = [](auto key) {
       auto name = get_key_name(static_cast<Key>(key));
       return (name.empty() ? "???" : std::string(name))
         + " (" + std::to_string(key) + ") ";
     };
-    print(e.state == KeyState::Down ? "+" :
-          e.state == KeyState::Up ? "-" : "*");
-    print(key_name(e.key).c_str());
+    return (e.state == KeyState::Down ? "+" :
+            e.state == KeyState::Up ? "-" : "*") + key_name(e.key);
   }
-#endif
+
+  std::string format(const KeySequence& sequence) {
+    auto string = std::string();
+    for (const auto& e : sequence)
+      string += format(e);
+    return string;
+  }
+#endif // !defined(NDEBUG)
 
   void flush_send_buffer() {
-    if (!g_send_buffer.empty()) {
-      g_sending_key = true;
-      const auto sent = ::SendInput(static_cast<UINT>(g_send_buffer.size()),
-        g_send_buffer.data(), sizeof(INPUT));
-      g_send_buffer.erase(begin(g_send_buffer), begin(g_send_buffer) + sent);
-      g_sending_key = false;
-    }
+    g_sending_key = true;
+    const auto sent = ::SendInput(
+      static_cast<UINT>(g_send_buffer.size()), 
+      g_send_buffer.data(), sizeof(INPUT));
+    g_send_buffer.clear();
+    g_sending_key = false;
   }
 
   void send_key_sequence(const KeySequence& key_sequence) {
-    for (const auto& event : key_sequence)
-      send_event(event);
+    auto output_on_release = false;
+    for (const auto& event : key_sequence) {
+      if (event.state == KeyState::OutputOnRelease) {
+        flush_send_buffer();
+        output_on_release = true;
+      }
+      else {
+        send_event(event);
+      }
+    }
 
-    flush_send_buffer();
+    if (!output_on_release)
+      flush_send_buffer();
   }
 
   bool translate_keyboard_input(WPARAM wparam, const KBDLLHOOKSTRUCT& kbd) {
@@ -80,6 +96,10 @@ namespace {
       return false;
 
     const auto input = get_key_event(wparam, kbd);
+
+    // block input after OutputOnRelease until trigger is released
+    if (input.state == KeyState::Down && !g_send_buffer.empty())
+      return true;
 
     auto translated = false;
     auto action = apply_input(input);
@@ -90,14 +110,9 @@ namespace {
     auto output = action.sequence;
     if (output.size() != 1 ||
         output.front().key != input.key ||
-        (output.front().state == KeyState::Up) !=
-          (input.state == KeyState::Up)) {
+        (output.front().state == KeyState::Up) != (input.state == KeyState::Up)) {
 #if !defined(NDEBUG)
-      print_event(input);
-      print("--> ");
-      for (const auto& event : output)
-        print_event(event);
-      print("\n");
+      verbose("%s--> %s", format(input).c_str(), format(output).c_str());
 #endif
       send_key_sequence(output);
       translated = true;
@@ -105,10 +120,8 @@ namespace {
     reuse_buffer(std::move(output));
 
 #if !defined(NDEBUG)
-    if (!translated) {
-      print_event(input);
-      print("\n");
-    }
+    if (!translated)
+      verbose("%s", format(input).c_str());
 #endif
     return translated;
   }
@@ -141,14 +154,27 @@ namespace {
         PostQuitMessage(0);
         return 0;
 
-      case WM_TIMER:
+      case WM_WTSSESSION_CHANGE:
+        g_session_changed = true;
+        break;
+
+      case WM_TIMER: {
         update_configuration();
-        if (update_focused_window(true)) {
+
+        if (update_focused_window()) {
+          // validate state when window was inaccessible
+          // force validation after session change
+          const auto check_accessibility = 
+            !std::exchange(g_session_changed, false);
+          validate_state(check_accessibility);
+
           // reinsert hook in front of callchain
           unhook_keyboard();
-          hook_keyboard();
+          if (!hook_keyboard())
+            verbose("Resetting keyboard hook failed");
         }
         break;
+      }
     }
     return DefWindowProcW(window, message, wparam, lparam);
   }
@@ -165,8 +191,9 @@ int run_hook(HINSTANCE instance) {
   if (!RegisterClassExW(&window_class))
     return 1;
 
+  verbose("Hooking keyboard");
   if (!hook_keyboard()) {
-    print("hooking keyboard failed.\n");
+    error("Hooking keyboard failed");
     UnregisterClassW(window_class_name, instance);
     return 1;
   }
@@ -175,14 +202,17 @@ int run_hook(HINSTANCE instance) {
     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
     HWND_MESSAGE, NULL, NULL,  NULL);
 
+  WTSRegisterSessionNotification(window, NOTIFY_FOR_THIS_SESSION);
   SetTimer(window, 1, update_interval_ms, NULL);
 
+  verbose("Entering update loop");
   auto message = MSG{ };
   while (GetMessageW(&message, window, 0, 0) > 0) {
     TranslateMessage(&message);
     DispatchMessageW(&message);
   }
 
+  WTSUnRegisterSessionNotification(window);
   DestroyWindow(window);
   UnregisterClassW(window_class_name, instance);
   unhook_keyboard();

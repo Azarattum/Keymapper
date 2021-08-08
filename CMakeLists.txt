@@ -75,9 +75,14 @@ else(NOT WIN32)
     add_compile_definitions(ENABLE_INTERCEPTION)
   endif(ENABLE_INTERCEPTION)
 
+  string(REPLACE "." "," GIT_COMMIT_FILEVERSION "${GIT_COMMIT_LAST_TAG}")
+  string(REGEX REPLACE "-.*" "" GIT_COMMIT_FILEVERSION "${GIT_COMMIT_FILEVERSION}")
+  configure_file("src/win32/resource.rc.in" "${CMAKE_SOURCE_DIR}/src/win32/_resource.rc")
+
   add_executable(hotkeyer WIN32
     ${SOURCES_CONFIG}
     ${SOURCES_RUNTIME}
+    src/win32/_resource.rc
     src/win32/ConfigFile.cpp
     src/win32/ConfigFile.h
     src/win32/FocusedWindow.cpp
@@ -92,6 +97,8 @@ else(NOT WIN32)
     src/win32/run_interception.cpp
     src/win32/win.h
   )
+
+  target_link_libraries(hotkeyer wtsapi32.lib)
 endif()
 
 option(ENABLE_TEST "Enable tests")

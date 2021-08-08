@@ -135,6 +135,11 @@ Action Stage::apply_input(const KeyEvent event) {
 
       if (result == MatchResult::match) {
         apply_output(get_output(mapping));
+
+        // release new output when triggering input was released
+        if (event.state == KeyState::Up)
+          release_triggered(event.key);
+
         finish_sequence();
 
         // finalize output for exclusive keys
@@ -156,7 +161,9 @@ Action Stage::apply_input(const KeyEvent event) {
 void Stage::release_triggered(KeyCode key) {
   const auto it = std::stable_partition(begin(m_output_down), end(m_output_down),
     [&](const auto& k) { return k.trigger != key; });
-  std::for_each(it, end(m_output_down),
+  std::for_each(
+    std::make_reverse_iterator(end(m_output_down)),
+    std::make_reverse_iterator(it),
     [&](const auto& k) {
       if (!k.temporarily_released)
         m_output_buffer.sequence.push_back({ k.key, KeyState::Up });
@@ -243,43 +250,64 @@ void Stage::update_output(const KeyEvent& event, KeyCode trigger) {
   const auto it = std::find_if(begin(m_output_down), end(m_output_down),
     [&](const OutputDown& down_key) { return down_key.key == event.key; });
 
-  if (event.state == KeyState::Up) {
-    if (it != end(m_output_down)) {
-      m_output_down.erase(it);
-      m_output_buffer.sequence.push_back(event);
-    }
-  }
-  else if (event.state == KeyState::Not) {
-    // make sure it is released in output
-    if (it != end(m_output_down)) {
-      if (!it->temporarily_released) {
-        m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
-        it->temporarily_released = true;
+  switch (event.state) {
+    case KeyState::Up: {
+      if (it != end(m_output_down)) {
+        m_output_down.erase(it);
+        m_output_buffer.sequence.push_back(event);
       }
-      it->suppressed = true;
+      break;
     }
-  }
-  else if (event.state == KeyState::Down) {
-    // reapply temporarily released
-    auto reapplied = false;
-    for (auto& output : m_output_down)
-      if (output.temporarily_released && !output.suppressed) {
-        output.temporarily_released = false;
-        m_output_buffer.sequence.emplace_back(output.key, KeyState::Down);
-        reapplied = true;
+
+    case KeyState::Not: {
+      // make sure it is released in output
+      if (it != end(m_output_down)) {
+        if (!it->temporarily_released) {
+          m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
+          it->temporarily_released = true;
+        }
+        it->suppressed = true;
       }
-
-    if (it == end(m_output_down)) {
-      m_output_down.push_back({ event.key, trigger, false, false });
+      break;
     }
-    else {
-      // already pressed, but something was reapplied in the meantime?
-      if (reapplied)
-        m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
 
-      it->temporarily_released = false;
+    case KeyState::Down: {
+      // reapply temporarily released
+      auto reapplied = false;
+      for (auto& output : m_output_down)
+        if (output.temporarily_released && !output.suppressed) {
+          output.temporarily_released = false;
+          m_output_buffer.sequence.emplace_back(output.key, KeyState::Down);
+          reapplied = true;
+        }
+
+      if (it == end(m_output_down)) {
+        m_output_down.push_back({ event.key, trigger, false, false });
+      }
+      else {
+        // already pressed, but something was reapplied in the meantime?
+        if (reapplied)
+          m_output_buffer.sequence.emplace_back(event.key, KeyState::Up);
+
+        it->temporarily_released = false;
+      }
+      m_output_buffer.sequence.emplace_back(event.key, KeyState::Down);
+      break;
     }
-    m_output_buffer.sequence.emplace_back(event.key, KeyState::Down);
+
+    case KeyState::OutputOnRelease: {
+      m_output_buffer.sequence.emplace_back(event.key, event.state);
+      break;
+    }
+
+    case KeyState::DownMatched:
+      // ignored
+      break;
+
+    case KeyState::UpAsync:
+    case KeyState::DownAsync:
+      assert(!"unreachable");
+      break;
   }
 }
 

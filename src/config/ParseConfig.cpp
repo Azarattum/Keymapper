@@ -63,18 +63,37 @@ namespace {
     for (auto& mapping : command.context_mappings)
       replace_not_key(mapping.output.sequence, both, left, right);
   }
+
+  void remove_mappings_to_context(Command& command, int context_index, bool apply_default) {
+    for (auto it = begin(command.context_mappings); it != end(command.context_mappings); ) {
+      auto& mapping = *it;
+      if (mapping.context_index == context_index) {
+        if (apply_default)
+          command.default_mapping = mapping.output;
+        it = command.context_mappings.erase(it);
+      }
+      else {
+        // reduce indices pointing to following contexts
+        if (mapping.context_index > context_index)
+          --mapping.context_index;
+        ++it;
+      }
+    }
+  }
 } // namespace
 
-Config ParseConfig::operator()(std::istream& is) {
+Config ParseConfig::operator()(std::istream& is, bool add_default_mappings) {
   m_line_no = 0;
   m_config.commands.clear();
   m_config.contexts.clear();
   m_commands_mapped.clear();
   m_macros.clear();
 
-  // automatically add mappings for common modifiers
-  for (auto key : { Key::Shift, Key::Control, Key::AltLeft, Key::AltRight })
-    add_mapping( { { *key, KeyState::Down } }, { ActionType::Sequence, "", { { *key, KeyState::Down } }});
+  if (add_default_mappings) {
+    // add mappings for immediately passing on common modifiers
+    for (auto key : { Key::Shift, Key::Control, Key::AltLeft, Key::AltRight })
+      add_mapping( { { *key, KeyState::Down } }, { ActionType::Sequence, "", { { *key, KeyState::Down } }});
+  }
 
   auto line = std::string();
   while (is.good()) {
@@ -86,7 +105,26 @@ Config ParseConfig::operator()(std::istream& is) {
   // check if there is a mapping for each command (to reduce typing errors)
   for (const auto& kv : m_commands_mapped)
     if (!kv.second)
-      throw ParseError("command '" + kv.first + "' was not mapped");
+      throw ParseError("Command '" + kv.first + "' was not mapped");
+
+  // remove contexts of other systems
+  // and apply contexts without class and title filter immediately
+  auto context_index = 0;
+  for (auto it = begin(m_config.contexts); it != end(m_config.contexts); ) {
+    auto& context = *it;
+    if (!context.system_filter_matched ||
+        (!context.window_class_filter &&
+         !context.window_title_filter)) {
+      const auto apply_default = context.system_filter_matched;
+      for (auto& command : m_config.commands)
+        remove_mappings_to_context(command, context_index, apply_default);
+      it = m_config.contexts.erase(it);
+    }
+    else {
+      ++it;
+      ++context_index;
+    }
+  }
 
   replace_logical_modifiers(*Key::Shift, *Key::ShiftLeft, *Key::ShiftRight);
   replace_logical_modifiers(*Key::Control, *Key::ControlLeft, *Key::ControlRight);
@@ -97,7 +135,7 @@ Config ParseConfig::operator()(std::istream& is) {
 
 void ParseConfig::error(std::string message) {
   throw ParseError(std::move(message) +
-    " (in line " + std::to_string(m_line_no) + ")");
+    " in line " + std::to_string(m_line_no));
 }
 
 void ParseConfig::parse_line(It it, const It end) {
@@ -106,11 +144,7 @@ void ParseConfig::parse_line(It it, const It end) {
     return;
 
   if (skip(&it, end, "[")) {
-    const auto begin = it;
-    if (!skip_until(&it, end, "]"))
-      error("missing ']'");
-
-    parse_context(begin, it-1);
+    parse_context(&it, end);
   }
   else {
     const auto begin = it;
@@ -130,7 +164,7 @@ void ParseConfig::parse_line(It it, const It end) {
     }
     else {
       if (!skip_until(&it, end, ">>"))
-        error("missing '>>'");
+        error("Missing '>>'");
 
       parse_command_and_mapping(begin, it - 2, it, end);
     }
@@ -139,49 +173,91 @@ void ParseConfig::parse_line(It it, const It end) {
 
   skip_space_and_comments(&it, end);
   if (it != end)
-    error("unexpected '" + std::string(it, end) + "'");
+    error("Unexpected '" + std::string(it, end) + "'");
 }
 
-void ParseConfig::parse_context(It it, const It end) {
-  skip_space(&it, end);
+Filter ParseConfig::read_filter(It* it, const It end) {
+  const auto begin = *it;
+  if (skip(it, end, "/")) {
+    // a regular expression
+    for (;;) {
+      if (!skip_until(it, end, "/"))
+        error("Unterminated regular expression");
+      // check for irregular number of preceding backslashes
+      auto prev = std::prev(*it, 2);
+      while (prev != begin && *prev == '\\')
+        prev = std::prev(prev);
+      if (std::distance(prev, *it) % 2 == 0)
+        break;
+    }
+    auto type = std::regex::ECMAScript;
+    const auto expr = std::string(begin, *it);
+    if (skip(it, end, "i"))
+      type |= std::regex::icase;
+    return Filter{ expr, std::regex(expr.substr(1, expr.size() - 2), type) };
+  }
+  else {
+    // a string
+    if (skip(it, end, "'") || skip(it, end, "\"")) {
+      const char mark[2] = { *(*it - 1), '\0' };
+      if (!skip_until(it, end, mark))
+        error("Unterminated string");
+      return Filter{ std::string(begin + 1, *it - 1), { } };
+    }
+    skip_value(it, end);
+    return Filter{ std::string(begin, *it), { } };
+  }
+}
+
+void ParseConfig::parse_context(It* it, const It end) {
+  skip_space(it, end);
 
   // TODO: for backward compatibility, remove
-  skip(&it, end, "window");
-  skip(&it, end, "Window");
-  skip_space(&it, end);
+  skip(it, end, "window");
+  skip(it, end, "Window");
+  skip_space(it, end);
 
-  auto class_filter = std::string();
-  auto title_filter = std::string();
   auto system_filter_matched = true;
+  auto class_filter = Filter();
+  auto title_filter = Filter();
+  for (;;) { 
+    const auto attrib = read_ident(it, end);
+    if (attrib.empty())
+      error("Identifier expected");
 
-  while (it != end) {
-    const auto attrib = read_ident(&it, end);
-    skip_space(&it, end);
-    if (!skip(&it, end, "="))
-      error("missing '='");
+    skip_space(it, end);
+    if (!skip(it, end, "="))
+      error("Missing '='");
 
-    auto value = read_value(&it, end);
+    skip_space(it, end);
     if (attrib == "class") {
-      class_filter = std::move(value);
+      class_filter = read_filter(it, end);
     }
     else if (attrib == "title") {
-      title_filter = std::move(value);
+      title_filter = read_filter(it, end);
     }
     else if (attrib == "system") {
-      system_filter_matched = (to_lower(std::move(value)) == current_system);
+      system_filter_matched =
+        (to_lower(read_value(it, end)) == current_system);
     }
     else {
-      error("unexpected '" + attrib + "'");
+      error("Unexpected '" + attrib + "'");
     }
-    skip_space(&it, end);
+
+    skip_space(it, end);
+    if (skip(it, end, "]"))
+      break;
+
+    skip_space(it, end);
+    if (*it == end)
+      error("Missing ']'");
   }
 
-  // simply set invalid class when system filter did not match
-  if (!system_filter_matched)
-    class_filter = "$";
-
-  m_config.contexts.push_back(
-    { std::move(class_filter), std::move(title_filter) });
+  m_config.contexts.push_back({
+    system_filter_matched,
+    std::move(class_filter),
+    std::move(title_filter)
+  });
 }
 
 void ParseConfig::parse_mapping(std::string name, It begin, It end) {
@@ -191,7 +267,9 @@ void ParseConfig::parse_mapping(std::string name, It begin, It end) {
 std::string ParseConfig::parse_command_name(It it, It end) const {
   skip_space(&it, end);
   auto ident = preprocess_ident(read_ident(&it, end));
-  if (ident.find(' ') != std::string::npos ||
+  skip_space(&it, end);
+  if (it != end ||
+      ident.find(' ') != std::string::npos ||
       get_key_by_name(ident) != Key::None)
     return { };
   return ident;
@@ -236,7 +314,7 @@ Action ParseConfig::parse_output(It it, It end) {
 
 void ParseConfig::parse_macro(std::string name, It it, const It end) {
   if (get_key_by_name(name) != Key::None)
-    error("invalid macro name '" + name + "'");
+    error("Invalid macro name '" + name + "'");
   skip_space(&it, end);
   m_macros[std::move(name)] = preprocess(it, end);
 }
@@ -280,9 +358,9 @@ bool ParseConfig::has_command(const std::string& name) const {
 void ParseConfig::add_command(std::string name, KeySequence input) {
   assert(!name.empty());
   if (!m_config.contexts.empty())
-    error("cannot add command in context");
+    error("Cannot add command in context");
   if (has_command(name))
-    error("duplicate command '" + name + "'");
+    error("Duplicate command '" + name + "'");
 
   m_config.commands.push_back({ name, std::move(input), {}, {} });
   m_commands_mapped[std::move(name)] = false;
@@ -291,7 +369,7 @@ void ParseConfig::add_command(std::string name, KeySequence input) {
 void ParseConfig::add_mapping(KeySequence input, Action output) {
   assert(!input.empty());
   if (!m_config.contexts.empty())
-    error("cannot map sequence in context");
+    error("Cannot map sequence in context");
   m_config.commands.push_back({ "", std::move(input), std::move(output), {} });
 }
 
@@ -301,21 +379,21 @@ void ParseConfig::add_mapping(std::string name, Action output) {
     begin(m_config.commands), end(m_config.commands),
     [&](const Command& command) { return command.name == name; });
   if (it == cend(m_config.commands))
-    error("unknown command '" + name + "'");
+    error("Unknown command '" + name + "'");
 
   if (!m_config.contexts.empty()) {
     // set mapping override
     const auto context_index = static_cast<int>(m_config.contexts.size()) - 1;
     if (!it->context_mappings.empty() &&
         it->context_mappings.back().context_index == context_index)
-      error("duplicate mapping override for '" + name + "'");
-
-    if (!m_config.contexts[context_index].window_class_filter.empty() || 
-        !m_config.contexts[context_index].window_title_filter.empty()) {
-      it->context_mappings.push_back({ context_index, std::move(output) });
-      m_commands_mapped[name] = true;
-      return;
-    }
+      error("Duplicate mapping override for '" + name + "'");
+    it->context_mappings.push_back({ context_index, std::move(output) });
+  }
+  else {
+    // set context default mapping
+    if (!it->default_mapping.empty())
+      error("Duplicate mapping of '" + name + "'");
+    it->default_mapping = std::move(output);
   }
 
   // set context default mapping
