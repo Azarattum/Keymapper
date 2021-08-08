@@ -391,15 +391,12 @@ void ParseConfig::add_mapping(std::string name, Action output) {
   }
   else {
     // set context default mapping
-    if (!it->default_mapping.empty())
+    if (!it->default_mapping.sequence.empty())
       error("Duplicate mapping of '" + name + "'");
     it->default_mapping = std::move(output);
   }
 
   // set context default mapping
-  if (!it->default_mapping.sequence.empty() || !it->default_mapping.command.empty())
-    error("duplicate mapping of '" + name + "'");
-  it->default_mapping = std::move(output);
   m_commands_mapped[name] = true;
 }
 

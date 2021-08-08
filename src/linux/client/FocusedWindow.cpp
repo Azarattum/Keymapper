@@ -33,9 +33,6 @@ public:
   }
 
   bool update() {
-    // TODO: is there a better way to prevent races?
-    const auto handler = XSetErrorHandler(&ignore_errors);
-
     const auto window = get_focused_window();
     auto window_title = get_window_title(window);
     if (window == m_focused_window &&

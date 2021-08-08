@@ -110,7 +110,7 @@ void ParseKeySequence::parse(It it, const It end) {
       output_on_release = true;
     }
     else if (skip(&it, end, "~")) {
-      add_key_to_sequence(read_ident(&it, end), KeyState::Exclusive);
+      add_key_to_sequence(read_key(&it, end), KeyState::Exclusive);
     }
     else if (skip(&it, end, "(")) {
       // begin together-group
