@@ -35,7 +35,7 @@ void print_help_message(const wchar_t* argv0) {
   "");
 #endif
 
-  print(("UniversalHotkeyer " + version + "fork by Azarattum\n"
+  error(("UniversalHotkeyer " + version + "fork by Azarattum\n"
     "(from: keymapper (c) 2019-2021 by Albert Kalchmair)\n"
     "\n"
     "Usage: hotkeyer [-options]\n"
